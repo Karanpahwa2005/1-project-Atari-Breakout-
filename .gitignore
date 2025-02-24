@@ -1,5 +1,6 @@
 import pygame
 import sys
+from pygame.locals import QUIT, K_LEFT, K_RIGHT
 
 # Game Variables
 SCREEN_WIDTH = 800
@@ -7,7 +8,7 @@ SCREEN_HEIGHT = 600
 PADDLE_WIDTH = 100
 PADDLE_HEIGHT = 20
 BALL_DIAMETER = 15
-BALL_VELOCITY = 10
+BALL_VELOCITY = 5  # Reduced for better playability
 FPS = 60
 
 # Colors
@@ -19,10 +20,17 @@ pygame.init()
 
 # Set up display
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Paddle Game")
 
 # Set up assets
-paddle = pygame.Rect(0, SCREEN_HEIGHT - PADDLE_HEIGHT, PADDLE_WIDTH, PADDLE_HEIGHT)
-ball = pygame.Rect(0, 0, BALL_DIAMETER, BALL_DIAMETER)
+paddle = pygame.Rect(SCREEN_WIDTH // 2 - PADDLE_WIDTH // 2, SCREEN_HEIGHT - PADDLE_HEIGHT - 10, PADDLE_WIDTH, PADDLE_HEIGHT)
+ball = pygame.Rect(SCREEN_WIDTH // 2 - BALL_DIAMETER // 2, SCREEN_HEIGHT // 2 - BALL_DIAMETER // 2, BALL_DIAMETER, BALL_DIAMETER)
+
+# Ball movement variables
+ball_dx, ball_dy = BALL_VELOCITY, BALL_VELOCITY
+
+# Clock to control frame rate
+clock = pygame.time.Clock()
 
 # Game loop
 while True:
@@ -34,17 +42,29 @@ while True:
 
     # Paddle movement
     keys = pygame.key.get_pressed()
-    if keys[K_LEFT]:
-        paddle.move_ip(-5, 0)
-    if keys[K_RIGHT]:
-        paddle.move_ip(5, 0)
+    if keys[K_LEFT] and paddle.left > 0:
+        paddle.move_ip(-7, 0)
+    if keys[K_RIGHT] and paddle.right < SCREEN_WIDTH:
+        paddle.move_ip(7, 0)
 
     # Ball movement
-    ball.move_ip(BALL_VELOCITY, BALL_VELOCITY)
+    ball.move_ip(ball_dx, ball_dy)
 
-    # Collision detection
-    if ball.colliderect(paddle):
-        BALL_VELOCITY = -BALL_VELOCITY
+    # Ball collision with walls
+    if ball.left <= 0 or ball.right >= SCREEN_WIDTH:
+        ball_dx = -ball_dx
+    if ball.top <= 0:
+        ball_dy = -ball_dy
+
+    # Ball collision with paddle
+    if ball.colliderect(paddle) and ball_dy > 0:  # Ensuring it bounces only when moving down
+        ball_dy = -ball_dy
+
+    # Ball out of bounds (Game Over)
+    if ball.bottom >= SCREEN_HEIGHT:
+        ball.x = SCREEN_WIDTH // 2 - BALL_DIAMETER // 2
+        ball.y = SCREEN_HEIGHT // 2 - BALL_DIAMETER // 2
+        ball_dx, ball_dy = BALL_VELOCITY, BALL_VELOCITY  # Reset ball velocity
 
     # Draw everything
     screen.fill(BLACK)
@@ -55,5 +75,4 @@ while True:
     pygame.display.flip()
 
     # Cap framerate
-    pygame.time.Clock().tick(FPS)
-
+    clock.tick(FPS)
